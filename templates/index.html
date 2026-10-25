@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10101c">
+  <title>ByteShelf | Your campus reading universe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
+  <aside class="sidebar">
+    <a class="brand" href="/" aria-label="ByteShelf home"><span class="brand-mark">B<span>✳</span></span><span>ByteShelf<small>READ. LEARN. REPEAT.</small></span></a>
+    <div class="side-label">YOUR SPACE</div>
+    <nav>
+      <a class="nav-item active" href="/"><span>⌕</span> Discover books</a>
+      <a class="nav-item" href="#algorithms"><span>⌘</span> Algorithm arena</a>
+      <a class="nav-item" href="#loans"><span>↔</span> Borrow / return</a>
+      <a class="nav-item" href="#manage"><span>＋</span> Add to the shelf</a>
+    </nav>
+    <div class="sidebar-spacer"></div>
+    <div class="side-note"><span class="status-dot"></span><span><b>All systems go</b><small>SQLite database connected</small></span></div>
+    <div class="side-footer">MADE FOR CURIOUS MINDS<br><b>DAA MINI PROJECT · 2026</b></div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div><div class="eyebrow"><span class="tiny-star">✦</span> THE CAMPUS KNOWLEDGE HUB</div><h1>Your next <span>brain upgrade.</span></h1></div>
+      <div class="top-pill"><span class="status-dot"></span> COLLECTION LIVE <span class="avatar">BS</span></div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}<div class="flash-wrap">{% for category, message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}</div>{% endif %}
+    {% endwith %}
+
+    <section class="hero">
+      <div class="hero-copy"><span class="tag"><span>✦</span> YOUR KNOWLEDGE ERA STARTS HERE</span><h2>Less scrolling.<br><em>More knowing.</em></h2>
+      <p>Find the books that level up your skills. Search the collection, then peek under the hood at the algorithms doing the work.</p>
+      <a class="hero-cta" href="#search">Find your next read <span>↗</span></a></div>
+      <div class="hero-art" aria-hidden="true"><div class="orbit orbit-a"></div><div class="orbit orbit-b"></div><div class="floating-card card-top">IDEAS IN<br><b>PROGRESS ✦</b></div><div class="stack-book stack-one"><small>01 / THINK</small><b>GROK<br>ALGO</b><i>the art of patterns</i></div><div class="stack-book stack-two"><small>02 / BUILD</small><b>MAKE<br>IT WORK</b><i>code your future</i></div><div class="floating-card card-bottom">100%<br><b>CURIOUS</b></div><span class="hero-spark spark-one">✳</span><span class="hero-spark spark-two">✦</span></div>
+    </section>
+
+    <section class="stats-grid">
+      <article class="stat-card"><div class="stat-icon icon-purple">▤</div><div><span>Books on the shelf</span><strong>{{ total }}</strong><small>Ideas waiting for you</small></div><span class="stat-arrow">↗</span></article>
+      <article class="stat-card"><div class="stat-icon icon-green">✓</div><div><span>Ready to borrow</span><strong>{{ available }}</strong><small>Titles with copies in stock</small></div><span class="stat-arrow">↗</span></article>
+      <article class="stat-card"><div class="stat-icon icon-orange">⌕</div><div><span>Your matches</span><strong>{{ result_count }}</strong><small>{% if query %}For “{{ query }}”{% else %}Explore everything{% endif %}</small></div><span class="stat-arrow">↗</span></article>
+    </section>
+
+    <section class="panel search-panel" id="search">
+      <div class="section-heading"><div><span class="eyebrow">01 / DISCOVER</span><h2>What are we learning today?</h2><p class="muted">Search by title, author, topic, or shelf ID.</p></div><span class="live-pill"><i></i> SEARCH IS ON</span></div>
+      <form class="search-form" action="/" method="get">
+        <div class="search-input"><span>⌕</span><input type="text" name="q" value="{{ query }}" placeholder="Try “Python”, “AI”, “Grokking Algorithms”…" aria-label="Search books"></div>
+        <select name="field" aria-label="Search field"><option value="title" {% if field == 'title' %}selected{% endif %}>Title</option><option value="author" {% if field == 'author' %}selected{% endif %}>Author</option><option value="category" {% if field == 'category' %}selected{% endif %}>Topic</option><option value="id" {% if field == 'id' %}selected{% endif %}>Shelf ID</option></select>
+        <button class="primary-btn" type="submit">Let's find it <span>↗</span></button>
+        {% if query %}<a class="clear-btn" href="/">Reset</a>{% endif %}
+      </form>
+      <div class="filter-line"><span>QUICK VIBES</span><div class="chips"><a class="chip {% if not query %}selected{% endif %}" href="/">✦ Everything</a>{% for cat in categories %}<a class="chip" href="/?field=category&q={{ cat|urlencode }}">{{ cat }}</a>{% endfor %}</div></div>
+    </section>
+
+    <section class="panel results-panel" id="collection">
+      <div class="section-heading"><div><span class="eyebrow">02 / THE COLLECTION</span><h2>{% if query %}Your search results{% else %}Books worth your time{% endif %}</h2></div><span class="result-pill">{{ result_count }} {% if result_count == 1 %}MATCH{% else %}MATCHES{% endif %}</span></div>
+      {% if books %}
+      <div class="table-wrap"><table><thead><tr><th>BOOK / TITLE</th><th>AUTHOR</th><th>TOPIC</th><th>SHELF ID</th><th>STATUS</th><th>CHECKOUT</th><th>MANAGE</th></tr></thead><tbody>
+      {% for book in books %}<tr>
+        <td><div class="book-title"><span class="mini-cover cover-{{ loop.index % 6 }}"><span>{{ ["✳", "⌘", "λ", "{}", "✦", "01"][loop.index0 % 6] }}</span></span><b>{{ book.title }}</b></div></td>
+        <td>{{ book.author }}</td><td><span class="category-label">{{ book.category }}</span></td><td><span class="id-label">BS-{{ "%03d"|format(book.id) }}</span></td>
+        <td>{% if book.available_copies > 0 %}<span class="availability available"><i></i>{{ book.available_copies }} available</span>{% else %}<span class="availability unavailable"><i></i>All borrowed</span>{% endif %}</td>
+        <td>{% if book.available_copies > 0 %}<form action="{{ url_for('borrow_book') }}" method="post" class="borrow-inline"><input type="hidden" name="book_id" value="{{ book.id }}"><input name="borrower_name" required placeholder="Your name" aria-label="Borrower name for {{ book.title }}"><button class="borrow-btn" type="submit">Borrow ↗</button></form>{% else %}<span class="muted">Check back soon</span>{% endif %}</td>
+        <td><form action="{{ url_for('delete_book', book_id=book.id) }}" method="post" onsubmit="return confirm('Remove this book from your shelf?')"><button class="delete-btn" type="submit" title="Remove book" aria-label="Remove {{ book.title }}">×</button></form></td>
+      </tr>{% endfor %}
+      </tbody></table></div>
+      {% else %}<div class="empty-state"><span>✳</span><h3>No matches. Yet.</h3><p>Try another keyword or switch up the search field.</p><a href="/">Back to the full shelf ↗</a></div>{% endif %}
+    </section>
+
+    <section class="panel" id="algorithms">
+      <div class="section-heading"><div><span class="eyebrow">03 / DAA PLAYGROUND</span><h2>Inside the algorithm arena <span class="heading-emoji">⚡</span></h2><p class="muted">Compare Linear, Binary, and Hash Search. Search for a title or author below to run a fresh comparison.</p></div></div>
+      <form action="/" method="get" class="arena-form" id="arenaForm">
+        <input name="q" value="{{ query }}" placeholder="Exact title / author / topic (e.g. Python Crash Course)" required>
+        <select name="field" aria-label="Algorithm search field"><option value="title" {% if field == 'title' %}selected{% endif %}>Title</option><option value="author" {% if field == 'author' %}selected{% endif %}>Author</option><option value="category" {% if field == 'category' %}selected{% endif %}>Topic</option><option value="id" {% if field == 'id' %}selected{% endif %}>Shelf ID</option></select>
+        <button class="primary-btn" type="submit">Run algorithms ⚡</button>
+      </form>
+      {% if stats %}
+      <div class="algorithm-grid">{% for s in stats %}<div class="algorithm-card algo-{{ loop.index }}"><div class="algorithm-top"><span class="algo-dot dot-{{ loop.index }}"></span><b>{{ s.name }}</b><span class="algo-tag">{% if loop.index == 1 %}SEQUENTIAL{% elif loop.index == 2 %}SORTED{% else %}HASH TABLE{% endif %}</span></div><div class="algo-value">{{ s.comparisons }} <small>checks</small></div><div class="algo-time">{{ s.time_ms }} ms measured</div><span class="complexity">{% if loop.index == 1 %}O(n){% elif loop.index == 2 %}O(log n) lookup*{% else %}O(1) average lookup*{% endif %}</span><p class="algo-found">{% if s.found %}Exact match found{% else %}No exact match{% endif %}</p></div>{% endfor %}</div>
+      <div class="chart-container"><canvas id="performanceChart" aria-label="Algorithm comparisons chart"></canvas></div>
+      <p class="footnote">*Binary search sorts the data first; hash lookup builds an index first. This demo shows lookup comparisons, and tiny timing results can fluctuate by machine.</p>
+      {% else %}
+      <div class="arena-empty"><span>⌘</span><b>Ready when you are.</b><p>Enter a search key above, then hit <strong>Run algorithms</strong> to see comparison counts and the live chart.</p></div>
+      {% endif %}
+    </section>
+
+    <section class="panel loans-panel" id="loans">
+      <div class="section-heading"><div><span class="eyebrow">04 / COMMUNITY SHELF</span><h2>Borrow & return <span class="heading-emoji">↔</span></h2><p class="muted">Borrow a copy from the collection, then mark it returned here. This demo stores the loan history in SQLite.</p></div><span class="result-pill">{{ active_loan_count }} ACTIVE LOANS</span></div>
+      {% if active_loans %}
+      <div class="table-wrap"><table><thead><tr><th>BOOK</th><th>BORROWER</th><th>CHECKED OUT</th><th>RETURN</th></tr></thead><tbody>
+      {% for loan in active_loans %}<tr><td><div class="book-title"><span class="mini-cover cover-{{ loop.index % 6 }}"><span>↗</span></span><b>{{ loan.title }}</b></div><small class="loan-author">{{ loan.author }}</small></td><td>{{ loan.borrower_name }}</td><td>{{ loan.borrowed_at }}</td><td><form action="{{ url_for('return_book', loan_id=loan.id) }}" method="post"><button class="return-btn" type="submit">Mark returned ✓</button></form></td></tr>{% endfor %}
+      </tbody></table></div>
+      {% else %}<div class="arena-empty"><span>📚</span><b>No active loans yet.</b><p>Use the Borrow button next to any available book. Active checkouts will appear here.</p></div>{% endif %}
+    </section>
+
+    <section class="panel manage-panel" id="manage">
+      <div class="section-heading"><div><span class="eyebrow">05 / MAKE IT YOURS</span><h2>Drop a new book on the shelf <span class="heading-emoji">✦</span></h2><p class="muted">Add a title to your local SQLite collection. Your shelf, your rules.</p></div></div>
+      <form action="/add" method="post" class="add-form">
+        <label>BOOK TITLE<input name="title" required placeholder="e.g. The Pragmatic Programmer"></label>
+        <label>AUTHOR<input name="author" required placeholder="Author name"></label>
+        <label>TOPIC<input name="category" required placeholder="e.g. AI & Machine Learning"></label>
+        <label>COPIES<input name="copies" type="number" min="0" value="1" required></label>
+        <button class="primary-btn" type="submit">＋ Add to shelf</button>
+      </form>
+      <div class="manage-bottom"><span>Need some starter inspo?</span><form action="/seed" method="post"><button class="text-btn" type="submit">＋ Add 100+ tech titles</button></form></div>
+    </section>
+    <footer><span>ByteShelf <b>✳</b> — Read. Learn. Repeat.</span><span>Python · Flask · SQLite · DAA</span></footer>
+  </main>
+  {% if stats %}<script>
+    const perfData = {{ stats | tojson }};
+    new Chart(document.getElementById('performanceChart'), {
+      type: 'bar',
+      data: { labels: perfData.map(item => item.name), datasets: [{ label: 'Comparisons', data: perfData.map(item => item.comparisons), borderWidth: 0, borderRadius: 8, backgroundColor: ['#a78bfa', '#5eead4', '#fb923c'], maxBarThickness: 64 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, title: { display: true, text: 'COMPARISONS PER SEARCH · LOWER CAN BE BETTER', color: '#a9a8bf', font: { family: 'DM Sans', size: 11, weight: 'bold' } } }, scales: { x: { grid: { display: false }, ticks: { color: '#a9a8bf' } }, y: { beginAtZero: true, ticks: { precision: 0, color: '#a9a8bf' }, grid: { color: '#29283b' } } } }
+    });
+  </script>{% endif %}
+</body>
+</html>
